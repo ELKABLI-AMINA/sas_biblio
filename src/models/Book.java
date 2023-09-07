@@ -2,12 +2,19 @@ package models;
 
 public class Book {
 
+    private int id;
     private String titre;
     private String auteur;
     private String isbn;
 
 
+    public int getId() {
+        return id;
+    }
 
+    public void setId(int id) {
+        this.id = id;
+    }
 
     public Book(String titre, String auteur, String isbn) {
         this.titre = titre;

@@ -5,6 +5,7 @@ import models.Emprunteur;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class EmprunteurService {
     private static Connection con  = DBConnection.createDBConnection();
@@ -27,4 +28,7 @@ public class EmprunteurService {
         }
         return null;
     }
+
+
+
 }
