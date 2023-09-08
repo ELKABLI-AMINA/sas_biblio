@@ -49,22 +49,29 @@ public class BookService {
     }
 
 
-    public void showAllBooks() {
-        String query = "SELECT * FROM livre";
-        System.out.println("Book Details ");
+
+    public void displayAvailableBooks() {
+        // Effectuez une requête SQL pour récupérer tous les livres disponibles
+        String query = "SELECT titre, auteur, statut FROM livre INNER JOIN copie ON livre.id = copie.livre_id ";
 
         try {
-            Statement stmt = con.createStatement();
-            ResultSet result = stmt.executeQuery(query);
+            PreparedStatement pstm = con.prepareStatement(query);
+            ResultSet result = pstm.executeQuery();
+
+            System.out.println("Liste des livres disponibles :");
+            System.out.println("-------------------------------------------------------");
+            System.out.println("Titre\t\tAuteur\t\tStatut");
+            System.out.println("-------------------------------------------------------");
 
             while (result.next()) {
-                System.out.format("%s\t%s\t%s\t%s\n",
-                        result.getString(1), // Colonne 1 : id
-                        result.getString(2), // Colonne 2 : titre
-                        result.getString(3), // Colonne 3 : auteur
-                        result.getString(4)  // Colonne 4 : isbn
-                );
+                String titre = result.getString("titre");
+                String auteur = result.getString("auteur");
+                String statut = result.getString("statut");
+
+                System.out.format("%s\t\t%s\t\t%s\n", titre, auteur, statut);
             }
+
+            System.out.println("-------------------------------------------------------");
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -162,15 +169,11 @@ public class BookService {
         System.out.println("Entrez le numéro ISBN du livre que vous souhaitez emprunter :");
         String isbn = scanner.next();
 
-        // Vérifiez si le livre existe
         Book existingBook = checkIfExists(isbn);
 
         if (existingBook != null) {
-            // Vérifiez si le livre est disponible
             String statut = daoCopie.getStatutByISBN(isbn);
-            System.out.println(statut);
             if ("disponible".equalsIgnoreCase(statut)) {
-                // Demandez les informations de l'emprunteur
                 System.out.println("Entrez le nom de l'emprunteur :");
                 String nom = scanner.next();
                 System.out.println("Entrez le numéro de membre de l'emprunteur :");
@@ -186,7 +189,7 @@ public class BookService {
                 String dateEmprunt = "2023-09-15"; // Remplacez par la vraie date d'emprunt
 
                 // Mettez à jour le statut du livre dans la table "copie" et enregistrez la date d'emprunt
-                daoCopie.updateStatutToEmprunte( isbn);
+                daoCopie.updateStatutToEmprunte(  isbn);
 
                 System.out.println("L'emprunt a réussi !");
             } else {
@@ -196,6 +199,145 @@ public class BookService {
             System.out.println("Ce livre n'existe pas dans la bibliothèque.");
         }
     }
+
+    public void retournerLivre() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Entrez le numéro ISBN du livre que vous souhaitez retourner :");
+        String isbn = scanner.next();
+
+        Book existingBook = checkIfExists(isbn);
+
+        if (existingBook != null) {
+            // Vérifiez si le livre est emprunté
+            String statut = daoCopie.getStatutByISBN(isbn);
+
+            if ("emprunté".equals(statut)) {
+                // Mettez à jour le statut du livre dans la table "copie" en le rendant disponible
+                daoCopie.updateStatutToDisponible(isbn);
+
+                // Supprimez les informations d'emprunteur et de date d'emprunt de la base de données (vous devrez implémenter cette méthode)
+                daoCopie.supprimerEmprunteurEtDate(isbn);
+
+                System.out.println("Le livre a été retourné avec succès !");
+            } else {
+                System.out.println("Désolé, ce livre n'est pas emprunté.");
+            }
+        } else {
+            System.out.println("Ce livre n'existe pas dans la bibliothèque.");
+        }
+    }
+    public void displayBorrowedBooks() {
+        String query =
+                      "SELECT livre.titre, livre.auteur, emprunteur.nom, copie_emprunteur.date_emprunt " +
+                "FROM livre " +
+                "INNER JOIN copie ON livre.id = copie.livre_id " +
+                "INNER JOIN copie_emprunteur ON copie.id = copie_emprunteur.copie_id " +
+                "INNER JOIN emprunteur ON copie_emprunteur.emprunteur_id = emprunteur.id " +
+                "WHERE copie.statut = 'emprunté'";
+
+
+        try {
+            PreparedStatement pstm = con.prepareStatement(query);
+            ResultSet result = pstm.executeQuery();
+
+            System.out.println("Liste des livres empruntés :");
+            System.out.println("------------------------------------------------------------");
+            System.out.println("Titre\t\tAuteur\t\tStatut\t\tEmprunteur\t\tNuméro de membre\t\tEmail\t\tDate d'emprunt");
+            System.out.println("------------------------------------------------------------");
+
+            while (result.next()) {
+                String titre = result.getString("titre");
+                String auteur = result.getString("auteur");
+                String statut = result.getString("statut");
+                String nomEmprunteur = result.getString("nom");
+                String numMembre = result.getString("num_de_membre");
+                String email = result.getString("email");
+                String dateEmprunt = result.getString("date_emprunt");
+
+                System.out.format("%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s\n", titre, auteur, statut, nomEmprunteur, numMembre, email, dateEmprunt);
+            }
+            System.out.println("------------------------------------------------------------");
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    public void generateLibraryReport() {
+        int totalBooks = getTotalBooks();
+        int availableBooks = getAvailableBooks();
+        int borrowedBooks = getBorrowedBooks();
+        int lostBooks = getLostBooks();
+
+        System.out.println("===== Rapport de la bibliothèque =====");
+        System.out.println("Nombre total de livres : " + totalBooks);
+        System.out.println("Nombre de livres disponibles : " + availableBooks);
+        System.out.println("Nombre de livres empruntés : " + borrowedBooks);
+        System.out.println("Nombre de livres perdus : " + lostBooks);
+    }
+
+      private int getTotalBooks() {
+        String query = "SELECT COUNT(*) AS total FROM livre";
+
+        try {
+            PreparedStatement pstm = con.prepareStatement(query);
+            ResultSet result = pstm.executeQuery();
+
+            if (result.next()) {
+                return result.getInt("total");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return 0;
+    }
+
+
+      private int getAvailableBooks() {
+        String query = "SELECT COUNT(*) AS available FROM copie WHERE statut = 'disponible'";
+
+        try {
+            PreparedStatement pstm = con.prepareStatement(query);
+            ResultSet result = pstm.executeQuery();
+
+            if (result.next()) {
+                return result.getInt("available");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return 0;
+    }
+
+
+      private int getBorrowedBooks() {
+        String query = "SELECT COUNT(*) AS borrowed FROM copie WHERE statut = 'emprunté'";
+
+        try {
+            PreparedStatement pstm = con.prepareStatement(query);
+            ResultSet result = pstm.executeQuery();
+
+            if (result.next()) {
+                return result.getInt("borrowed");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return 0;
+    }
+
+
+    private int getLostBooks() {
+
+        return 0;
+    }
+
+
+
+
+
 }
 
 

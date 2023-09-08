@@ -52,6 +52,7 @@ public class Hmi {
 
                     Utilisateur loginSuccessful = dao.loginUser(loginEmail, loginPassword);
                     if (loginSuccessful != null) {
+                        System.out.println("*_____________________________*");
                         System.out.println("Hello " + loginSuccessful.getNom());
                         isLoggedIn = true;
                         currentUser = loginSuccessful;
@@ -64,15 +65,15 @@ public class Hmi {
                         do {
                             System.out.println("Manage Library");
                             System.out.println("1. Add a Book");
-                            System.out.println("2. display the list of books");
+                            System.out.println("2. Display available books");
                             System.out.println("3. Search  a book");
                             System.out.println("4. update  a book");
                             System.out.println("5. delete a book");
                             System.out.println("9. display the list of borrowed books");
                             System.out.println("6. Add a borrow ");
                             System.out.println("7. borrow a book ");
-                            System.out.println("8. update a book");
-                            System.out.println("10. borrow a book");
+                            System.out.println("8. retourne a book");
+                            System.out.println("10. statistics");
 
 
                             int libraryChoice = reader.nextInt();
@@ -96,7 +97,7 @@ public class Hmi {
                                     daoCopie.insertCopies(bookId, quantity);
                                     break;
                                 case 2:
-                                    daoBook.showAllBooks();
+                                 daoBook.displayAvailableBooks();
                                     break;
                                 case 3:
 
@@ -120,12 +121,6 @@ public class Hmi {
 
                                     break;
                                 case 4:
-//                                    // Logique pour afficher les livres empruntés
-//                                    System.out.println("ENtre l isbn: ");
-//                                    isbn = reader.next();
-//                                    // check if ISBN exists(
-//                                    Book bookExists =daoBook.checkIfExists(isbn) ;
-//                                    if(bookExists != null) emprunter(bookExists);
                                     System.out.println("Enter isbn to update the details");
                                     String oldIsbn = reader.next(); // Sauvegarde de l'ancien ISBN
                                     System.out.println("Enter the new title");
@@ -163,7 +158,16 @@ public class Hmi {
                                     emprunteur.setEmail(email);
                                     daoEmprunteur.createBorrower(emprunteur);
                                     break;
-                                case 11:
+                                case 8:
+                                    System.out.println("Enter isbn to delete the details");
+                                    isbn = reader.next();
+                                    daoBook.retournerLivre();
+                                    break;
+                                case 9:
+                                    daoBook.displayBorrowedBooks();
+                                    break;
+                                case 10:
+                                    daoBook.generateLibraryReport();
                                     break;
                                 default:
                                     System.out.println("Invalid choice. Please select a valid library option.");

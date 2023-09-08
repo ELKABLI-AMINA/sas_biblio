@@ -38,16 +38,18 @@ public class CopieService {
     }
     public void updateStatutToEmprunte(String isbn) {
 //        String query = "UPDATE copie SET statut = 'emprunté' WHERE livre_id IN (SELECT id FROM livre WHERE isbn = ?)";
-        String query = "UPDATE copie SET statut = 'emprunté' WHERE id = ?";
+        String query = "UPDATE copie SET statut = 'emprunté' WHERE livre_id IN (SELECT id FROM livre WHERE isbn = ?)  AND statut = 'disponible' LIMIT 1";
+
         try {
             PreparedStatement pstm = con.prepareStatement(query);
             pstm.setString(1, isbn);
 
-            int cnt = pstm.executeUpdate();
+            int cnt = pstm.executeUpdate(); // Utilisez executeUpdate pour les opérations de mise à jour
+
             if (cnt != 0) {
                 System.out.println("Statut mis à jour avec succès : disponible -> emprunté.");
             } else {
-                System.out.println("Aucune copie disponible correspondante trouvée.");
+                System.out.println("Aucune copie disponible correspondante trouvée ou le statut est déjà 'emprunté'.");
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -71,6 +73,43 @@ public class CopieService {
         // Si aucun résultat n'est trouvé, retournez null ou une valeur par défaut
         return null;
     }
+    public void supprimerEmprunteurEtDate(String isbn) {
+        // Exécutez une requête SQL pour supprimer les informations d'emprunteur et de date d'emprunt du livre avec l'ISBN donné.
+        String query = "UPDATE copie SET emprunteur_id = NULL, date_emprunt = NULL WHERE livre_id IN (SELECT id FROM livre WHERE isbn = ?) LIMIT 1";
+
+        try {
+            PreparedStatement pstm = con.prepareStatement(query);
+            pstm.setString(1, isbn);
+
+            int cnt = pstm.executeUpdate();
+            if (cnt != 0) {
+                System.out.println("Informations d'emprunteur et de date d'emprunt supprimées avec succès.");
+            } else {
+                System.out.println("Aucune copie correspondante trouvée.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    public void updateStatutToDisponible(String isbn) {
+        // Exécutez une requête SQL pour mettre à jour le statut du livre avec l'ISBN donné à "disponible".
+        String query = "UPDATE copie SET statut = 'disponible' WHERE livre_id IN (SELECT id FROM livre WHERE isbn = ?)";
+
+        try {
+            PreparedStatement pstm = con.prepareStatement(query);
+            pstm.setString(1, isbn);
+
+            int cnt = pstm.executeUpdate();
+            if (cnt != 0) {
+                System.out.println("Statut mis à jour avec succès : emprunté -> disponible.");
+            } else {
+                System.out.println("Aucune copie correspondante trouvée.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
 
 
 
