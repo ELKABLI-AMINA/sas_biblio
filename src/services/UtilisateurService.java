@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 public class UtilisateurService {
     private static Connection con  = DBConnection.createDBConnection();
     public void createUtilisateur(Utilisateur utilisateur) {
-        String query = "\\u001B[31mINSERT INTO utilisateur (nom, email, password) VALUES (?, ?, ?)";
+        String query = "INSERT INTO utilisateur (nom, email, password) VALUES (?, ?, ?)";
         try {
             if (isManagerRegistered()) {
                 System.out.println("A manager is already registered. You cannot register again.");

@@ -3,6 +3,8 @@ package models;
 import java.util.ArrayList;
 
 public class Copie {
+
+
     private String statut;
     private int livreId;
     private ArrayList<Book> books;

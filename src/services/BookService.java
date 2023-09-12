@@ -1,19 +1,13 @@
 package services;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 import Connection.DBConnection;
-import com.mysql.cj.jdbc.CallableStatementWrapper;
 import models.Book;
 import models.Emprunteur;
-import services.EmprunteurService;
-import services.CopieService;
 
 
 public class BookService {
@@ -24,7 +18,7 @@ public class BookService {
 
     public int createBook(Book book) {
         String query = "INSERT INTO livre (titre, auteur, isbn) VALUES (?, ?, ?)";
-        int bookId = -1; // Initialize with an invalid ID
+        int bookId = -1;
 
         try {
             PreparedStatement pstm = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
@@ -35,8 +29,7 @@ public class BookService {
             int cnt = pstm.executeUpdate();
             if (cnt != 0) {
                 System.out.println("Book Inserted Successfully");
-                // Retrieve the generated book ID
-                ResultSet generatedKeys = pstm.getGeneratedKeys();
+                ResultSet generatedKeys = pstm.getGeneratedKeys();// pour récupérer l'id
                 if (generatedKeys.next()) {
                     bookId = generatedKeys.getInt(1);
                 }
@@ -50,9 +43,9 @@ public class BookService {
 
 
 
-    public void displayAvailableBooks() {
-        // Effectuez une requête SQL pour récupérer tous les livres disponibles
-        String query = "SELECT titre, auteur, statut FROM livre INNER JOIN copie ON livre.id = copie.livre_id ";
+    public String displayAvailableBooks() {
+
+        String query = "SELECT titre, auteur, statut FROM livre INNER JOIN copie ON livre.id = copie.livre_id  where statut= 'disponible' ";
 
         try {
             PreparedStatement pstm = con.prepareStatement(query);
@@ -75,28 +68,38 @@ public class BookService {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        return query;
     }
+//    public void updateBook(String isbn, String titre, String auteur, String newIsbn) {
+//        String query = "UPDATE livre SET titre=?, auteur=?, isbn=? WHERE isbn=?";
+//        try {
+//            PreparedStatement pstm = con.prepareStatement(query);
+//            pstm.setString(1, titre);
+//            pstm.setString(2, auteur);
+//            pstm.setString(3, newIsbn);
+//            pstm.setString(4, isbn);
+//
+//            int cnt = pstm.executeUpdate();
+//            if (cnt != 0) {
+//                System.out.println("Book Details updated successfully");
+//                // Si vous avez des copies à ajouter, appelez la méthode pour ajouter des copies
+//                if (quantityToAdd > 0) {
+//                    daoCopie.insertCopies(bookId , quantity);
+//                }
+//
+//                // Si vous avez des copies à supprimer, appelez la méthode pour supprimer des copies
+//                if (quantityToRemove > 0) {
+//                    daoCopie.supprimerCopies(bookId, quantityToRemove);
+//                }
+//            } else {
+//                System.out.println("No book found with the provided ISBN.");
+//            }
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
+//    }
 
-    public void updateBook(String isbn, String titre, String auteur, String newIsbn) {
-        String query = "update livre set titre =?, auteur =? where isbn=?";
-        try {
-            PreparedStatement pstm = con.prepareStatement(query);
-            pstm.setString(1, titre);
-            pstm.setString(2, auteur);
-            pstm.setString(3, isbn);
 
-            int cnt = pstm.executeUpdate();
-            if (cnt != 0) {
-                System.out.println("Book Details updated successfuly ");
-            }
-
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-
-    }
 
     public static List<Book> rechercherLivres(String searchQuery) {
         List<Book> resultats = new ArrayList<>();
@@ -159,9 +162,12 @@ public class BookService {
             ex.printStackTrace();
         }
 
-        // Si aucun résultat n'est trouvé, retournez null
+
         return null;
     }
+
+
+
 
 
     public void emprunterLivre() {
@@ -171,92 +177,68 @@ public class BookService {
 
         Book existingBook = checkIfExists(isbn);
 
-        if (existingBook != null) {
-            String statut = daoCopie.getStatutByISBN(isbn);
-            if ("disponible".equalsIgnoreCase(statut)) {
+       if (existingBook != null) {
+            int copieId = daoCopie.getStatutByISBNDisponible(isbn);
+            if (copieId!=0) {
                 System.out.println("Entrez le nom de l'emprunteur :");
                 String nom = scanner.next();
                 System.out.println("Entrez le numéro de membre de l'emprunteur :");
-                String numMembre = scanner.next();
+                String num_de_membre = scanner.next();
                 System.out.println("Entrez l'email de l'emprunteur :");
                 String email = scanner.next();
+                Emprunteur  emprunteur = daoEmprunteur.emprunteurExisteDeja(nom, num_de_membre, email);
+             if(emprunteur!=null){
+                 daoCopie.insererCopieEmprunteur(copieId, emprunteur.getId(), "24234");
+                 daoCopie.updateStatutToEmprunte(isbn);
+             }else{
+                 emprunteur = new Emprunteur(nom, num_de_membre, email);
+                 emprunteur = daoEmprunteur.createBorrower(emprunteur);
+                 int emprunteurId= daoEmprunteur.getEmprunteurIdByInfo(nom, num_de_membre , email);
 
-                // Créez l'emprunteur et récupérez son ID
-                Emprunteur emprunteur = new Emprunteur(nom, numMembre, email);
-                emprunteur = daoEmprunteur.createBorrower(emprunteur);
+                 daoCopie.insererCopieEmprunteur(copieId, emprunteurId, "12313");
 
-                // Enregistrez la date d'emprunt (vous devrez définir la date actuelle)
-                String dateEmprunt = "2023-09-15"; // Remplacez par la vraie date d'emprunt
 
-                // Mettez à jour le statut du livre dans la table "copie" et enregistrez la date d'emprunt
-                daoCopie.updateStatutToEmprunte(  isbn);
+                 System.out.println("L'emprunt a réussi !");
+             }
 
-                System.out.println("L'emprunt a réussi !");
+
             } else {
                 System.out.println("Désolé, ce livre n'est pas disponible pour l'emprunt.");
             }
-        } else {
-            System.out.println("Ce livre n'existe pas dans la bibliothèque.");
-        }
-    }
-
-    public void retournerLivre() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Entrez le numéro ISBN du livre que vous souhaitez retourner :");
-        String isbn = scanner.next();
-
-        Book existingBook = checkIfExists(isbn);
-
-        if (existingBook != null) {
-            // Vérifiez si le livre est emprunté
-            String statut = daoCopie.getStatutByISBN(isbn);
-
-            if ("emprunté".equals(statut)) {
-                // Mettez à jour le statut du livre dans la table "copie" en le rendant disponible
-                daoCopie.updateStatutToDisponible(isbn);
-
-                // Supprimez les informations d'emprunteur et de date d'emprunt de la base de données (vous devrez implémenter cette méthode)
-                daoCopie.supprimerEmprunteurEtDate(isbn);
-
-                System.out.println("Le livre a été retourné avec succès !");
-            } else {
-                System.out.println("Désolé, ce livre n'est pas emprunté.");
-            }
-        } else {
-            System.out.println("Ce livre n'existe pas dans la bibliothèque.");
-        }
+       } else {         System.out.println("Ce livre n'existe pas dans la bibliothèque.");
+       }
     }
     public void displayBorrowedBooks() {
         String query =
-                      "SELECT livre.titre, livre.auteur, emprunteur.nom, copie_emprunteur.date_emprunt " +
-                "FROM livre " +
-                "INNER JOIN copie ON livre.id = copie.livre_id " +
-                "INNER JOIN copie_emprunteur ON copie.id = copie_emprunteur.copie_id " +
-                "INNER JOIN emprunteur ON copie_emprunteur.emprunteur_id = emprunteur.id " +
-                "WHERE copie.statut = 'emprunté'";
+                "SELECT livre.titre, livre.auteur, emprunteur.nom , emprunteur.num_de_membre, emprunteur.email, copie_emprunteur.date_emprunt " +
+                        "FROM copie_emprunteur " +
+                        "JOIN copie ON copie_emprunteur.copie_id = copie.id " +
+                        "JOIN emprunteur ON copie_emprunteur.emprunteur_id = emprunteur.id " +
+                        "JOIN livre ON copie.livre_id = livre.id " +
+                        "WHERE copie.statut = 'emprunté'";
 
 
         try {
             PreparedStatement pstm = con.prepareStatement(query);
-            ResultSet result = pstm.executeQuery();
+            ResultSet resultSet = pstm.executeQuery();
 
-            System.out.println("Liste des livres empruntés :");
-            System.out.println("------------------------------------------------------------");
-            System.out.println("Titre\t\tAuteur\t\tStatut\t\tEmprunteur\t\tNuméro de membre\t\tEmail\t\tDate d'emprunt");
-            System.out.println("------------------------------------------------------------");
+            while (resultSet.next()) {
+                String titreLivre = resultSet.getString("titre");
+                String auteurLivre = resultSet.getString("auteur");
+                String nomEmprunteur = resultSet.getString("nom");
+                String numMembre = resultSet.getString("num_de_membre");
+                String emailEmprunteur = resultSet.getString("email");
+                String dateEmprunt = resultSet.getString("date_emprunt");
 
-            while (result.next()) {
-                String titre = result.getString("titre");
-                String auteur = result.getString("auteur");
-                String statut = result.getString("statut");
-                String nomEmprunteur = result.getString("nom");
-                String numMembre = result.getString("num_de_membre");
-                String email = result.getString("email");
-                String dateEmprunt = result.getString("date_emprunt");
-
-                System.out.format("%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s\n", titre, auteur, statut, nomEmprunteur, numMembre, email, dateEmprunt);
+                System.out.println("Titre du livre : " + titreLivre);
+                System.out.println("Auteur du livre : " + auteurLivre);
+                System.out.println("Nom de l'emprunteur : " + nomEmprunteur);
+                System.out.println("Numéro de membre de l'emprunteur : " + numMembre);
+                System.out.println("Email de l'emprunteur : " + emailEmprunteur);
+                System.out.println("Date d'emprunt : " + dateEmprunt);
+                System.out.println("------------------------");
             }
-            System.out.println("------------------------------------------------------------");
+
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -308,7 +290,7 @@ public class BookService {
         }
 
         return 0;
-    }
+       }
 
 
       private int getBorrowedBooks() {
@@ -334,11 +316,31 @@ public class BookService {
         return 0;
     }
 
+    public void retournerLivre() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Entrez le numéro ISBN du livre que vous souhaitez retourner :");
+        String isbn = scanner.next();
+
+        String statut = daoCopie.getStatutByISBNEmprunté(isbn);
+
+        if ("emprunté".equals(statut)) {
+            daoCopie.updateStatutToDisponible(isbn);
+
+            daoEmprunteur.supprimerEmprunteurEtDate(isbn);
+
+            System.out.println("Le livre a été retourné avec succès !");
+        } else {
+            System.out.println("Désolé, ce livre n'est pas emprunté.");
+        }
+
+    }
+
 
 
 
 
 }
+
 
 
 

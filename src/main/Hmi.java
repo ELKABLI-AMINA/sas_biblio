@@ -1,7 +1,6 @@
 package main;
 
 import models.Book;
-import models.Emprunteur;
 import models.Utilisateur;
 import services.BookService;
 import services.CopieService;
@@ -18,13 +17,13 @@ public class Hmi {
         BookService daoBook = new BookService();
         CopieService daoCopie = new CopieService();
         UtilisateurService dao = new UtilisateurService();
-        System.out.println("Welcome to Library management application");
+        System.out.println("----------Welcome to Library management application---------");
         Scanner reader = new Scanner(System.in);
         boolean isLoggedIn = false;
         Utilisateur currentUser = null;
 
         do {
-            System.out.println("Choose an option:\n");
+            System.out.println("--------------Choose an option--------------:\n");
 
             if (!isLoggedIn) {
                 System.out.println("1. Register");
@@ -35,14 +34,22 @@ public class Hmi {
             }
 
             int choice = reader.nextInt();
-            reader.nextLine(); // Lire la ligne vide après nextInt()
+            reader.nextLine();
 
             switch (choice) {
                 case 1:
+                    Utilisateur utilisateur = new Utilisateur();
+                    System.out.println("Enter name:");
+                    String nom = reader.nextLine();
                     System.out.println("Enter Email:");
-                    String Email = reader.nextLine();
+                    String email = reader.nextLine();
                     System.out.println("Enter password:");
-                    String Password = reader.nextLine();
+                    String password = reader.nextLine();
+                    utilisateur.setNom(nom);
+                    utilisateur.setEmail(email);
+                    utilisateur.setPassword(password);
+                    dao.createUtilisateur(utilisateur);
+
                     break;
                 case 2:
                     System.out.println("Enter Email:");
@@ -69,11 +76,12 @@ public class Hmi {
                             System.out.println("3. Search  a book");
                             System.out.println("4. update  a book");
                             System.out.println("5. delete a book");
-                            System.out.println("9. display the list of borrowed books");
-                            System.out.println("6. Add a borrow ");
-                            System.out.println("7. borrow a book ");
-                            System.out.println("8. retourne a book");
-                            System.out.println("10. statistics");
+                            System.out.println("6. borrow a book ");
+                            System.out.println("7. retourne a book");
+                            System.out.println("8. display the list of borrowed books");
+//                            System.out.println("6. Add a borrow ");
+
+                            System.out.println("9. statistics");
 
 
                             int libraryChoice = reader.nextInt();
@@ -120,53 +128,33 @@ public class Hmi {
                                     }
 
                                     break;
-                                case 4:
-                                    System.out.println("Enter isbn to update the details");
-                                    String oldIsbn = reader.next(); // Sauvegarde de l'ancien ISBN
-                                    System.out.println("Enter the new title");
-                                    titre = reader.next();
-                                    System.out.println("Enter the new auteur");
-                                    auteur = reader.next();
-                                    System.out.println("Enter the new isbn");
-                                    String newIsbn = reader.next(); // Saisie du nouveau ISBN
-                                    daoBook.updateBook(oldIsbn, titre, auteur, newIsbn);
-                                    break;
-
-                                case 7:
-                                    System.out.println("Enter bookId");
-                                    int BookId = reader.nextInt();
-                                    System.out.println("Enter borrowId");
-                                    int BorrowId = reader.nextInt();
-                                    daoBook.emprunterLivre();
-                                    break;
-
+//                                case 4:
+//                                    System.out.println("Enter isbn to update the details");
+//                                    String oldIsbn = reader.next(); // Sauvegarde de l'ancien ISBN
+//                                    System.out.println("Enter the new title");
+//                                    titre = reader.next();
+//                                    System.out.println("Enter the new auteur");
+//                                    auteur = reader.next();
+//                                    System.out.println("Enter the new isbn");
+//                                    String newIsbn = reader.next(); // Saisie du nouveau ISBN
+//                                    daoBook.updateBook(oldIsbn, titre, auteur, newIsbn);
+//                                    break;
                                 case 5:
                                     System.out.println("Enter isbn to delete the details");
                                     isbn = reader.next();
                                     daoBook.deleteBook(isbn);
                                     break;
+
                                 case 6:
-                                    Emprunteur emprunteur = new Emprunteur();
-                                    System.out.println("Enter name : ");
-                                    String nom = reader.next();
-                                    System.out.println("Enter Membership_number : ");
-                                    String num_de_membre = reader.next();
-                                    System.out.println("Enter email : ");
-                                    String email = reader.next();
-                                    emprunteur.setNom(nom);
-                                    emprunteur.setNum_de_membre(num_de_membre);
-                                    emprunteur.setEmail(email);
-                                    daoEmprunteur.createBorrower(emprunteur);
+                                    daoBook.emprunterLivre();
                                     break;
-                                case 8:
-                                    System.out.println("Enter isbn to delete the details");
-                                    isbn = reader.next();
+                                case 7:
                                     daoBook.retournerLivre();
                                     break;
-                                case 9:
+                                case 8:
                                     daoBook.displayBorrowedBooks();
                                     break;
-                                case 10:
+                                case 9:
                                     daoBook.generateLibraryReport();
                                     break;
                                 default:
