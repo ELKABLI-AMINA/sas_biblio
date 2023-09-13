@@ -11,7 +11,7 @@ import models.Emprunteur;
 
 
 public class BookService {
-    CopieService daoCopie = new CopieService();
+
     EmprunteurService daoEmprunteur = new EmprunteurService();
 
     private static Connection con = DBConnection.createDBConnection();
@@ -22,6 +22,8 @@ public class BookService {
 
         try {
             PreparedStatement pstm = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+
+
             pstm.setString(1, book.getTitre());
             pstm.setString(2, book.getAuteur());
             pstm.setString(3, book.getIsbn());
@@ -42,9 +44,8 @@ public class BookService {
     }
 
 
-
-    public String displayAvailableBooks() {
-
+    public List<Book> displayAvailableBooks() {
+        List<Book> availableBooks = new ArrayList<>();
         String query = "SELECT titre, auteur, statut FROM livre INNER JOIN copie ON livre.id = copie.livre_id  where statut= 'disponible' ";
 
         try {
@@ -68,37 +69,41 @@ public class BookService {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        return query;
+        return availableBooks;
     }
-//    public void updateBook(String isbn, String titre, String auteur, String newIsbn) {
-//        String query = "UPDATE livre SET titre=?, auteur=?, isbn=? WHERE isbn=?";
-//        try {
-//            PreparedStatement pstm = con.prepareStatement(query);
-//            pstm.setString(1, titre);
-//            pstm.setString(2, auteur);
-//            pstm.setString(3, newIsbn);
-//            pstm.setString(4, isbn);
-//
-//            int cnt = pstm.executeUpdate();
-//            if (cnt != 0) {
-//                System.out.println("Book Details updated successfully");
-//                // Si vous avez des copies à ajouter, appelez la méthode pour ajouter des copies
+
+
+    public void updateBook(String isbn, String titre, String auteur, String newIsbn) {
+        CopieService daoCopie = new CopieService();
+        BookService daoBook = new BookService();
+
+        String query = "UPDATE livre SET titre=?, auteur=?, isbn=? WHERE isbn=?";
+        try {
+            PreparedStatement pstm = con.prepareStatement(query);
+            pstm.setString(1, titre);
+            pstm.setString(2, auteur);
+            pstm.setString(3, newIsbn);
+            pstm.setString(4, isbn);
+
+            int cnt = pstm.executeUpdate();
+            if (cnt != 0) {
+                System.out.println("Book Details updated successfully");
 //                if (quantityToAdd > 0) {
-//                    daoCopie.insertCopies(bookId , quantity);
+//
+//                    daoCopie.insertCopies(bookId,
+//                            quantityToAdd);
 //                }
 //
-//                // Si vous avez des copies à supprimer, appelez la méthode pour supprimer des copies
 //                if (quantityToRemove > 0) {
 //                    daoCopie.supprimerCopies(bookId, quantityToRemove);
 //                }
-//            } else {
-//                System.out.println("No book found with the provided ISBN.");
-//            }
-//        } catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
-//    }
-
+            } else {
+                System.out.println("No book found with the provided ISBN.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 
 
     public static List<Book> rechercherLivres(String searchQuery) {
@@ -125,22 +130,44 @@ public class BookService {
         return resultats;
     }
 
-    public void deleteBook(String isbn) {
-        String query = "DELETE from livre where isbn=? ";
-        try {
-            PreparedStatement stmt = con.prepareStatement(query);
-            stmt.setString(1, isbn);
-            int cnt = stmt.executeUpdate();
-            if (cnt != 0) {
-                System.out.println("Book Deleted Succefully");
-            }
 
+public void deleteBook(String isbn) {
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
+    String queryCheckCopies = "SELECT COUNT(*) FROM copie WHERE livre_id IN (SELECT id FROM livre WHERE isbn = ?) AND statut= 'emprunte' ";
+
+    try {
+        PreparedStatement stmtCheckCopies = con.prepareStatement(queryCheckCopies);
+        stmtCheckCopies.setString(1, isbn);
+        ResultSet resultSet = stmtCheckCopies.executeQuery();
+
+        if (resultSet.next() && resultSet.getInt(1) > 0) {
+            System.out.println("Le livre ne peut pas être supprimé car il y a des copies empruntées.");
+            return;
         }
 
+
+        String queryDeleteCopies = "DELETE FROM copie WHERE livre_id IN (SELECT id FROM livre WHERE isbn = ?)";
+        String queryDeleteBook = "DELETE FROM livre WHERE isbn = ?";
+
+
+        PreparedStatement stmtDeleteCopies = con.prepareStatement(queryDeleteCopies);
+        stmtDeleteCopies.setString(1, isbn);
+        int copiesDeleted = stmtDeleteCopies.executeUpdate();
+
+        PreparedStatement stmtDeleteBook = con.prepareStatement(queryDeleteBook);
+        stmtDeleteBook.setString(1, isbn);
+        int bookDeleted = stmtDeleteBook.executeUpdate();
+
+        if (bookDeleted > 0) {
+            System.out.println("Le livre et les copies associées ont été supprimés avec succès.");
+        } else {
+            System.out.println("Aucun livre trouvé avec l'ISBN fourni.");
+        }
+    } catch (Exception ex) {
+        ex.printStackTrace();
     }
+}
+
 
     public Book checkIfExists(String isbn) {
         String query = "SELECT * FROM livre WHERE isbn = ?";
@@ -167,47 +194,47 @@ public class BookService {
     }
 
 
-
-
-
     public void emprunterLivre() {
+        CopieService daoCopie = new CopieService();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Entrez le numéro ISBN du livre que vous souhaitez emprunter :");
         String isbn = scanner.next();
 
         Book existingBook = checkIfExists(isbn);
 
-       if (existingBook != null) {
+        if (existingBook != null) {
             int copieId = daoCopie.getStatutByISBNDisponible(isbn);
-            if (copieId!=0) {
+            if (copieId != 0) {
                 System.out.println("Entrez le nom de l'emprunteur :");
                 String nom = scanner.next();
                 System.out.println("Entrez le numéro de membre de l'emprunteur :");
                 String num_de_membre = scanner.next();
                 System.out.println("Entrez l'email de l'emprunteur :");
                 String email = scanner.next();
-                Emprunteur  emprunteur = daoEmprunteur.emprunteurExisteDeja(nom, num_de_membre, email);
-             if(emprunteur!=null){
-                 daoCopie.insererCopieEmprunteur(copieId, emprunteur.getId(), "24234");
-                 daoCopie.updateStatutToEmprunte(isbn);
-             }else{
-                 emprunteur = new Emprunteur(nom, num_de_membre, email);
-                 emprunteur = daoEmprunteur.createBorrower(emprunteur);
-                 int emprunteurId= daoEmprunteur.getEmprunteurIdByInfo(nom, num_de_membre , email);
+                Emprunteur emprunteur = daoEmprunteur.emprunteurExisteDeja(nom, num_de_membre, email);
+                if (emprunteur != null) {
+                    daoCopie.insererCopieEmprunteur(copieId, emprunteur.getId(), "24234");
+                    daoCopie.updateStatutToEmprunte(isbn);
+                } else {
+                    emprunteur = new Emprunteur(nom, num_de_membre, email);
+                    emprunteur = daoEmprunteur.createBorrower(emprunteur);
+                    int emprunteurId = daoEmprunteur.getEmprunteurIdByInfo(nom, num_de_membre, email);
 
-                 daoCopie.insererCopieEmprunteur(copieId, emprunteurId, "12313");
+                    daoCopie.insererCopieEmprunteur(copieId, emprunteurId, "12313");
 
 
-                 System.out.println("L'emprunt a réussi !");
-             }
+                    System.out.println("L'emprunt a réussi !");
+                }
 
 
             } else {
                 System.out.println("Désolé, ce livre n'est pas disponible pour l'emprunt.");
             }
-       } else {         System.out.println("Ce livre n'existe pas dans la bibliothèque.");
-       }
+        } else {
+            System.out.println("Ce livre n'existe pas dans la bibliothèque.");
+        }
     }
+
     public void displayBorrowedBooks() {
         String query =
                 "SELECT livre.titre, livre.auteur, emprunteur.nom , emprunteur.num_de_membre, emprunteur.email, copie_emprunteur.date_emprunt " +
@@ -244,6 +271,7 @@ public class BookService {
             ex.printStackTrace();
         }
     }
+
     public void generateLibraryReport() {
         int totalBooks = getTotalBooks();
         int availableBooks = getAvailableBooks();
@@ -257,7 +285,7 @@ public class BookService {
         System.out.println("Nombre de livres perdus : " + lostBooks);
     }
 
-      private int getTotalBooks() {
+    private int getTotalBooks() {
         String query = "SELECT COUNT(*) AS total FROM livre";
 
         try {
@@ -275,7 +303,7 @@ public class BookService {
     }
 
 
-      private int getAvailableBooks() {
+    private int getAvailableBooks() {
         String query = "SELECT COUNT(*) AS available FROM copie WHERE statut = 'disponible'";
 
         try {
@@ -290,10 +318,10 @@ public class BookService {
         }
 
         return 0;
-       }
+    }
 
 
-      private int getBorrowedBooks() {
+    private int getBorrowedBooks() {
         String query = "SELECT COUNT(*) AS borrowed FROM copie WHERE statut = 'emprunté'";
 
         try {
@@ -317,6 +345,7 @@ public class BookService {
     }
 
     public void retournerLivre() {
+        CopieService daoCopie = new CopieService();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Entrez le numéro ISBN du livre que vous souhaitez retourner :");
         String isbn = scanner.next();
@@ -334,9 +363,6 @@ public class BookService {
         }
 
     }
-
-
-
 
 
 }

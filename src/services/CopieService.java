@@ -6,7 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 public class CopieService {
-//    BookService daoBook = new BookService();
+
     private static Connection con  = DBConnection.createDBConnection();
     public void insertCopies(int bookId, int quantity) {
         String query = "INSERT INTO copie (statut, livre_id) VALUES (?, ?)";
@@ -142,10 +142,10 @@ public class CopieService {
     }
 
 //    public void supprimerCopies(int bookId, int quantityToRemove) {
+//        BookService daoBook = new BookService();
 //        try {
 //
-//            String availableCopies = daoBook.displayAvailableBooks();
-//
+//           int  availableCopies = daoBook.displayAvailableBooks().size();
 //
 //            if (availableCopies >= quantityToRemove) {
 //                String query = "UPDATE copie SET statut = 'non disponible' WHERE livre_id = ? AND statut = 'disponible' LIMIT ?";

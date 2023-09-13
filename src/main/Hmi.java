@@ -79,8 +79,6 @@ public class Hmi {
                             System.out.println("6. borrow a book ");
                             System.out.println("7. retourne a book");
                             System.out.println("8. display the list of borrowed books");
-//                            System.out.println("6. Add a borrow ");
-
                             System.out.println("9. statistics");
 
 
@@ -106,16 +104,15 @@ public class Hmi {
                                     break;
                                 case 2:
                                  daoBook.displayAvailableBooks();
+
                                     break;
                                 case 3:
 
                                     System.out.println("Enter a title or author to search for books:");
                                     String searchQuery = reader.next();
-                                    // Appeler la méthode de recherche et obtenir les résultats
                                     List<Book> resultatRecherche = BookService.rechercherLivres(searchQuery);
 
                                     if (!resultatRecherche.isEmpty()) {
-                                        // Afficher les résultats de la recherche
                                         System.out.println("Search Results:");
                                         for (Book bookSearch : resultatRecherche) {
                                             System.out.println("Titre: " + bookSearch.getTitre());
@@ -128,17 +125,32 @@ public class Hmi {
                                     }
 
                                     break;
-//                                case 4:
-//                                    System.out.println("Enter isbn to update the details");
-//                                    String oldIsbn = reader.next(); // Sauvegarde de l'ancien ISBN
-//                                    System.out.println("Enter the new title");
-//                                    titre = reader.next();
-//                                    System.out.println("Enter the new auteur");
-//                                    auteur = reader.next();
-//                                    System.out.println("Enter the new isbn");
-//                                    String newIsbn = reader.next(); // Saisie du nouveau ISBN
-//                                    daoBook.updateBook(oldIsbn, titre, auteur, newIsbn);
-//                                    break;
+                                case 4:
+                                    System.out.println("Enter isbn to update the details");
+                                    String oldIsbn = reader.next();
+                                    System.out.println("Enter the new title");
+                                    titre = reader.next();
+                                    System.out.println("Enter the new auteur");
+                                    auteur = reader.next();
+                                    System.out.println("Enter the new isbn");
+                                    String newIsbn = reader.next();
+//                                    System.out.println("Choose an action:");
+//                                    System.out.println("1. Add copies");
+//                                    System.out.println("2. Remove copies");
+//                                    int choiceToUpdate = reader.nextInt();
+//
+//                                     quantity = 0;
+//                                    if (choiceToUpdate == 1) {
+//                                        System.out.println("Enter the quantity to add");
+//                                        quantity = reader.nextInt();
+//                                    } else if (choiceToUpdate == 2) {
+//                                        System.out.println("Enter the quantity to remove");
+//                                        quantity = reader.nextInt();
+//                                    }
+
+                                    daoBook.updateBook(oldIsbn, titre, auteur, newIsbn);
+
+
                                 case 5:
                                     System.out.println("Enter isbn to delete the details");
                                     isbn = reader.next();
