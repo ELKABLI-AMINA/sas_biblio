@@ -96,11 +96,14 @@ public class Hmi {
                                     String isbn = reader.next();
                                     System.out.println("Enter quantity: ");
                                     int quantity = reader.nextInt();
+                                    System.out.println("Enter closet_shelves");
+                                    int étagère_de_placard= reader.nextInt();
                                     book.setTitre(titre);
                                     book.setAuteur(auteur);
                                     book.setIsbn(isbn);
+                                    book.setÉtagère_de_placard( étagère_de_placard);
                                     int bookId = daoBook.createBook(book);
-                                    daoCopie.insertCopies(bookId, quantity);
+                                    daoCopie.insertCopies(bookId, quantity );
                                     break;
                                 case 2:
                                  daoBook.displayAvailableBooks();

@@ -2,14 +2,17 @@ package services;
 import Connection.DBConnection;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
+
 
 public class CopieService {
 
     private static Connection con  = DBConnection.createDBConnection();
-    public void insertCopies(int bookId, int quantity) {
-        String query = "INSERT INTO copie (statut, livre_id) VALUES (?, ?)";
+    public void insertCopies(int bookId, int quantity ) {
+        String query = "INSERT INTO copie (statut, livre_id ) VALUES (?, ? )";
         try {
             PreparedStatement pstm = con.prepareStatement(query);
 
@@ -117,15 +120,16 @@ public class CopieService {
         return null;
     }
 
-    public void insererCopieEmprunteur(int copieId, int emprunteurId, String dateEmprunt) {
-
-        String query = "INSERT INTO copie_emprunteur (copie_id, emprunteur_id, date_emprunt) VALUES (?, ?, ?)";
+    public void insererCopieEmprunteur(int copieId, int emprunteurId) {
+        String query = "INSERT INTO copie_emprunteur (copie_id, emprunteur_id, date_emprunt) VALUES (?, ?, SYSDATE())";
 
         try {
             PreparedStatement pstm = con.prepareStatement(query);
             pstm.setInt(1, copieId);
             pstm.setInt(2, emprunteurId);
-            pstm.setString(3, dateEmprunt);
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
 
             int rowCount = pstm.executeUpdate();
 
@@ -140,6 +144,8 @@ public class CopieService {
             ex.printStackTrace();
         }
     }
+
+
 
 //    public void supprimerCopies(int bookId, int quantityToRemove) {
 //        BookService daoBook = new BookService();

@@ -7,9 +7,10 @@ public class Copie {
 
     private String statut;
     private int livreId;
+
     private ArrayList<Book> books;
 
-    public Copie(String statut, int livreId) {
+    public Copie(String statut, int livreId ) {
         this.statut = statut;
         this.livreId = livreId;
         this.initBook();
@@ -38,6 +39,7 @@ public class Copie {
     public void setLivreId(int livreId) {
         this.livreId = livreId;
     }
+
 
     public ArrayList<Book> getBooks() {
         return books;
