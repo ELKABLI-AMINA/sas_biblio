@@ -6,10 +6,13 @@ import java.util.List;
 import java.util.Scanner;
 
 import Connection.DBConnection;
+import java.text.SimpleDateFormat;
 import models.Book;
 import models.Emprunteur;
 import java.sql.Timestamp;
 import java.util.Date;
+
+
 
 public class BookService {
 
@@ -43,8 +46,6 @@ public class BookService {
 
         return bookId;
     }
-
-
     public List<Book> displayAvailableBooks() {
         List<Book> availableBooks = new ArrayList<>();
         String query = "SELECT titre, auteur, statut FROM livre INNER JOIN copie ON livre.id = copie.livre_id  where statut= 'disponible' ";
@@ -73,39 +74,26 @@ public class BookService {
         return availableBooks;
     }
 
-
-    public void updateBook(String isbn, String titre, String auteur, String newIsbn) {
-        CopieService daoCopie = new CopieService();
-        BookService daoBook = new BookService();
-
-        String query = "UPDATE livre SET titre=?, auteur=?, isbn=? WHERE isbn=?";
+    public void updateBook(String isbn, String titre, String auteur, String newIsbn , int étagère_de_placard) {
+        String query = "UPDATE livre SET titre=?, auteur=?, étagère_de_placard =?,isbn=? WHERE isbn=?";
         try {
             PreparedStatement pstm = con.prepareStatement(query);
             pstm.setString(1, titre);
             pstm.setString(2, auteur);
             pstm.setString(3, newIsbn);
-            pstm.setString(4, isbn);
+            pstm.setInt(4, étagère_de_placard);
+            pstm.setString(5, isbn);
 
             int cnt = pstm.executeUpdate();
             if (cnt != 0) {
                 System.out.println("Book Details updated successfully");
-//                if (quantityToAdd > 0) {
-//
-//                    daoCopie.insertCopies(bookId,
-//                            quantityToAdd);
-//                }
-//
-//                if (quantityToRemove > 0) {
-//                    daoCopie.supprimerCopies(bookId, quantityToRemove);
-//                }
             } else {
                 System.out.println("No book found with the provided ISBN.");
             }
-        } catch (Exception ex) {
+        } catch (SQLException ex) {
             ex.printStackTrace();
         }
     }
-
 
     public static List<Book> rechercherLivres(String searchQuery) {
         List<Book> resultats = new ArrayList<>();
@@ -130,7 +118,6 @@ public class BookService {
 
         return resultats;
     }
-
 
     public void deleteBook(String isbn) {
 
@@ -169,9 +156,8 @@ public class BookService {
         }
     }
 
-
     public Book checkIfExists(String isbn) {
-        String query = "SELECT * FROM livre WHERE isbn = ?";
+        String query = "SELECT * FROM livre WHERE isbn = ? ";
         try {
             PreparedStatement pstm = con.prepareStatement(query);
             pstm.setString(1, isbn);
@@ -194,7 +180,6 @@ public class BookService {
         return null;
     }
 
-
     public void emprunterLivre() {
         CopieService daoCopie = new CopieService();
         Scanner scanner = new Scanner(System.in);
@@ -212,6 +197,7 @@ public class BookService {
                 String num_de_membre = scanner.next();
                 System.out.println("Entrez l'email de l'emprunteur :");
                 String email = scanner.next();
+
                 Emprunteur emprunteur = daoEmprunteur.emprunteurExisteDeja(nom, num_de_membre, email);
                 if (emprunteur != null) {
                      daoCopie.insererCopieEmprunteur(copieId, emprunteur.getId());
@@ -221,7 +207,8 @@ public class BookService {
                     emprunteur = daoEmprunteur.createBorrower(emprunteur);
                     int emprunteurId = daoEmprunteur.getEmprunteurIdByInfo(nom, num_de_membre, email);
                     Timestamp dateEmprunt = new Timestamp(new Date().getTime());
-                    daoCopie.insererCopieEmprunteur(copieId, emprunteurId);
+                    daoCopie.insererCopieEmprunteur(copieId, emprunteurId );
+                    daoCopie.updateStatutToEmprunte(isbn);
                     System.out.println("L'emprunt a réussi !");
                 }
             } else {
@@ -280,8 +267,7 @@ public class BookService {
         System.out.println("Nombre de livres empruntés : " + borrowedBooks);
         System.out.println("Nombre de livres perdus : " + lostBooks);
     }
-
-    private int getTotalBooks() {
+         private int getTotalBooks() {
         String query = "SELECT COUNT(*) AS total FROM livre";
 
         try {
@@ -297,9 +283,7 @@ public class BookService {
 
         return 0;
     }
-
-
-    private int getAvailableBooks() {
+        private int getAvailableBooks() {
         String query = "SELECT COUNT(*) AS available FROM copie WHERE statut = 'disponible'";
 
         try {
@@ -315,9 +299,11 @@ public class BookService {
 
         return 0;
     }
+        private int getLostBooks() {
 
-
-    private int getBorrowedBooks() {
+        return 0;
+    }
+         private int getBorrowedBooks() {
         String query = "SELECT COUNT(*) AS borrowed FROM copie WHERE statut = 'emprunté'";
 
         try {
@@ -334,31 +320,48 @@ public class BookService {
         return 0;
     }
 
-
-    private int getLostBooks() {
-
-        return 0;
-    }
-
     public void retournerLivre() {
         CopieService daoCopie = new CopieService();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Entrez le numéro ISBN du livre que vous souhaitez retourner :");
         String isbn = scanner.next();
+        System.out.println("Entrez le nom de l'emprunteur :");
+        String nom = scanner.next();
+        System.out.println("Entrez le numéro de membre de l'emprunteur :");
+        String num_de_membre = scanner.next();
+        System.out.println("Entrez l'email de l'emprunteur :");
+        String email = scanner.next();
+        int emprunteurId = daoEmprunteur.getEmprunteurIdByInfo(nom, num_de_membre, email);
+
+        System.out.println("Entrez la date d'emprunt (au format YYYY-MM-DD) :");
+        String date_empruntStr = scanner.next();
+
+        // Convertir la chaîne de date en un objet java.sql.Date
+        java.sql.Date date_emprunt = null;
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            java.util.Date parsedDate = dateFormat.parse(date_empruntStr);
+            date_emprunt = new java.sql.Date(parsedDate.getTime());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 
         String statut = daoCopie.getStatutByISBNEmprunté(isbn);
 
         if ("emprunté".equals(statut)) {
-            daoCopie.updateStatutToDisponible(isbn);
-
             daoEmprunteur.supprimerEmprunteurEtDate(isbn);
 
-            System.out.println("Le livre a été retourné avec succès !");
+            System.out.println("Les informations d'emprunteur et de date d'emprunt ont été supprimées avec succès.");
         } else {
             System.out.println("Désolé, ce livre n'est pas emprunté.");
         }
-
     }
+
+
+
+
+
+
 
 
 }

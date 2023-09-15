@@ -3,9 +3,12 @@ import Connection.DBConnection;
 
 import java.sql.Connection;
 import java.sql.Date;
+
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 
 
 public class CopieService {
@@ -56,25 +59,6 @@ public class CopieService {
         }
     }
 
-
-    public void updateStatutToDisponible(String isbn) {
-        String query = "UPDATE copie SET statut = 'disponible' WHERE livre_id IN (SELECT id FROM livre WHERE isbn = ?)";
-
-        try {
-            PreparedStatement pstm = con.prepareStatement(query);
-            pstm.setString(1, isbn);
-
-            int cnt = pstm.executeUpdate();
-            if (cnt != 0) {
-                System.out.println("Statut mis à jour avec succès : emprunté -> disponible.");
-            } else {
-                System.out.println("Aucune copie correspondante trouvée.");
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
     public int getStatutByISBNDisponible(String isbn) {
         String query = "SELECT copie.statut as copie_statut, copie.id as copie_id  \n" +
                 "FROM copie\n" +
@@ -98,8 +82,8 @@ public class CopieService {
 
         return 0;
     }
-    public String getStatutByISBNEmprunté(String isbn)
-    { String query = "SELECT copie.statut as copie_statut " +
+    public String getStatutByISBNEmprunté(String isbn) {
+        String query = "SELECT copie.statut as copie_statut " +
             "FROM copie " +
             "INNER JOIN livre ON copie.livre_id = livre.id " +
             "WHERE isbn = ? AND copie.statut = 'emprunté'";
@@ -120,15 +104,16 @@ public class CopieService {
         return null;
     }
 
-    public void insererCopieEmprunteur(int copieId, int emprunteurId) {
-        String query = "INSERT INTO copie_emprunteur (copie_id, emprunteur_id, date_emprunt) VALUES (?, ?, SYSDATE())";
+    public void insererCopieEmprunteur(int copieId, int emprunteurId ) {
+        String query = "INSERT INTO copie_emprunteur (copie_id, emprunteur_id, date_emprunt, date_retour) " +
+                "VALUES (?, ?, SYSDATE(), SYSDATE() + INTERVAL 3 DAY)";
 
         try {
             PreparedStatement pstm = con.prepareStatement(query);
             pstm.setInt(1, copieId);
             pstm.setInt(2, emprunteurId);
 
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
 
 
             int rowCount = pstm.executeUpdate();
@@ -143,34 +128,36 @@ public class CopieService {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+   }
+    public int getNombreCopiesByISBNEmprunteurAndDate(String isbn, int emprunteurId, java.sql.Date date_emprunt) {
+        int nombreCopies = 0;
+
+        String query = "SELECT COUNT(*) AS nombreCopies FROM copie_emprunteur " +
+                "INNER JOIN emprunteur ON copie_emprunteur.emprunteur_id = emprunteur.id " +
+                "INNER JOIN copie ON copie_emprunteur.copie_id = copie.id " +
+                "INNER JOIN livre ON copie.livre_id = livre.id " +
+                "WHERE livre.isbn = ? AND emprunteur.id = ? AND copie_emprunteur.date_emprunt = ?";
+
+        try {
+            PreparedStatement pstm = con.prepareStatement(query);
+            pstm.setString(1, isbn);
+            pstm.setInt(2, emprunteurId);
+            pstm.setDate(3, date_emprunt);
+
+            ResultSet resultSet = pstm.executeQuery();
+
+            if (resultSet.next()) {
+                nombreCopies = resultSet.getInt("nombreCopies");
+            }
+
+            resultSet.close();
+            pstm.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return nombreCopies;
     }
-
-
-
-//    public void supprimerCopies(int bookId, int quantityToRemove) {
-//        BookService daoBook = new BookService();
-//        try {
-//
-//           int  availableCopies = daoBook.displayAvailableBooks().size();
-//
-//            if (availableCopies >= quantityToRemove) {
-//                String query = "UPDATE copie SET statut = 'non disponible' WHERE livre_id = ? AND statut = 'disponible' LIMIT ?";
-//                PreparedStatement pstm = con.prepareStatement(query);
-//                pstm.setInt(1, bookId);
-//                pstm.setInt(2, quantityToRemove);
-//                int updatedCount = pstm.executeUpdate();
-//                if (updatedCount == quantityToRemove) {
-//                    System.out.println(quantityToRemove + " copies ont été supprimées avec succès.");
-//                } else {
-//                    System.out.println("Erreur lors de la suppression de copies.");
-//                }
-//            } else {
-//                System.out.println("Pas assez d'exemplaires 'disponibles' à supprimer.");
-//            }
-//        } catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
-//    }
 
 
 

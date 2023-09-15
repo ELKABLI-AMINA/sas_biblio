@@ -87,24 +87,32 @@ public class Hmi {
 
                             switch (libraryChoice) {
                                 case 1:
-                                    Book book = new Book();
-                                    System.out.println("Enter title : ");
-                                    String titre = reader.next();
-                                    System.out.println("Enter Auteur : ");
-                                    String auteur = reader.next();
-                                    System.out.println("Enter isbn : ");
+                                    System.out.println("Enter ISBN: ");
                                     String isbn = reader.next();
-                                    System.out.println("Enter quantity: ");
-                                    int quantity = reader.nextInt();
-                                    System.out.println("Enter closet_shelves");
-                                    int étagère_de_placard= reader.nextInt();
-                                    book.setTitre(titre);
-                                    book.setAuteur(auteur);
-                                    book.setIsbn(isbn);
-                                    book.setÉtagère_de_placard( étagère_de_placard);
-                                    int bookId = daoBook.createBook(book);
-                                    daoCopie.insertCopies(bookId, quantity );
+                                    Book existingBook = daoBook.checkIfExists(isbn);
+
+                                    if (existingBook != null) {
+                                        System.out.println("Le livre existe déjà avec ISBN : " + existingBook.getIsbn());
+                                    } else {
+                                        Book newBook = new Book();
+                                        System.out.println("Enter title : ");
+                                        String titre = reader.next();
+                                        System.out.println("Enter Auteur : ");
+                                        String auteur = reader.next();
+                                        System.out.println("Enter quantity: ");
+                                        int quantity = reader.nextInt();
+                                        System.out.println("Enter closet_shelves");
+                                        int étagère_de_placard = reader.nextInt();
+                                        newBook.setTitre(titre);
+                                        newBook.setAuteur(auteur);
+                                        newBook.setIsbn(isbn);
+                                        newBook.setÉtagère_de_placard(étagère_de_placard);
+                                        int bookId = daoBook.createBook(newBook);
+                                        daoCopie.insertCopies(bookId, quantity);
+                                        System.out.println("Nouveau livre créé avec succès.");
+                                    }
                                     break;
+
                                 case 2:
                                  daoBook.displayAvailableBooks();
 
@@ -129,29 +137,30 @@ public class Hmi {
 
                                     break;
                                 case 4:
-                                    System.out.println("Enter isbn to update the details");
+                                    System.out.println("Enter oldIsbn: ");
                                     String oldIsbn = reader.next();
-                                    System.out.println("Enter the new title");
-                                    titre = reader.next();
-                                    System.out.println("Enter the new auteur");
-                                    auteur = reader.next();
-                                    System.out.println("Enter the new isbn");
-                                    String newIsbn = reader.next();
-//                                    System.out.println("Choose an action:");
-//                                    System.out.println("1. Add copies");
-//                                    System.out.println("2. Remove copies");
-//                                    int choiceToUpdate = reader.nextInt();
-//
-//                                     quantity = 0;
-//                                    if (choiceToUpdate == 1) {
-//                                        System.out.println("Enter the quantity to add");
-//                                        quantity = reader.nextInt();
-//                                    } else if (choiceToUpdate == 2) {
-//                                        System.out.println("Enter the quantity to remove");
-//                                        quantity = reader.nextInt();
-//                                    }
 
-                                    daoBook.updateBook(oldIsbn, titre, auteur, newIsbn);
+                                    existingBook = daoBook.checkIfExists(oldIsbn);
+
+                                    if (existingBook != null) {
+                                        System.out.println("Le livre existe déjà avec ISBN : " + existingBook.getIsbn());
+                                        System.out.println("Enter new title : ");
+                                        String titre = reader.next();
+                                        System.out.println("Enter new Auteur : ");
+                                        String auteur = reader.next();
+                                        System.out.println("Enter new closet_shelves");
+                                        int étagère_de_placard = reader.nextInt();
+                                        System.out.println("Enter newIsbn: ");
+                                        String newIsbn = reader.next(); // Déclarez et initialisez newIsbn
+
+                                        // Utilisez oldIsbn comme isbn pour mettre à jour le livre existant
+                                        daoBook.updateBook(oldIsbn, titre, auteur, newIsbn, étagère_de_placard);
+                                        System.out.println("Livre mis à jour avec succès.");
+                                    } else {
+                                        System.out.println("Le livre avec l'ISBN " + oldIsbn + " n'existe pas.");
+                                    }
+                                    break;
+
 
 
                                 case 5:
